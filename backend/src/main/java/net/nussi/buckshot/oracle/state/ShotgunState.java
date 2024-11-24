@@ -1,9 +1,9 @@
-package net.nussi.buckshot.oracle.item;
+package net.nussi.buckshot.oracle.state;
 
-import net.nussi.buckshot.oracle.action.GameAction;
-import net.nussi.buckshot.oracle.action.ShotOpponentAction;
-import net.nussi.buckshot.oracle.action.ShotSelfAction;
-import net.nussi.buckshot.oracle.state.GameState;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.ToString;
+import net.nussi.buckshot.oracle.item.BulletType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,13 +14,18 @@ import java.util.List;
 import java.util.Stack;
 import java.util.stream.Collector;
 
-public class ShotgunItem extends GameItem implements Serializable {
+@AllArgsConstructor
+@Builder
+public class ShotgunState implements Serializable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public Stack<BulletType> magazine = new Stack<>();
+    @Builder.Default
+    public List<BulletType> magazine = new ArrayList<>();
+
+    @Builder.Default
     public boolean isSawedOf = false;
 
-    public ShotgunItem(int live, int blank) {
+    public ShotgunState reload(int live, int blank) {
         for (int i = 0; i < live; i++) {
             magazine.add(BulletType.LIVE);
         }
@@ -30,20 +35,8 @@ public class ShotgunItem extends GameItem implements Serializable {
         }
 
         Collections.shuffle(magazine);
-
-        String pattern = getPattern();
-
-        logger.info("Created SHOTGUN with {} live and {} blank rounds, with following pattern: {}", live, blank, pattern);
+        return this;
     }
-
-    @Override
-    public List<GameAction> getActions(GameState state) {
-        return List.of(
-                new ShotOpponentAction(state),
-                new ShotSelfAction(state)
-        );
-    }
-
 
     public long countLiveRounds() {
         return magazine.stream()
@@ -61,11 +54,15 @@ public class ShotgunItem extends GameItem implements Serializable {
         return magazine.size();
     }
 
-    public static int calculateDamage(BulletType bullet, boolean isSawedOf) {
+    public int damage() {
         int damage = 0;
-        if (bullet == BulletType.LIVE) damage += 1;
+        if (magazine.getFirst() == BulletType.LIVE) damage += 1;
         if (isSawedOf) damage *= 2;
         return damage;
+    }
+
+    public BulletType eject() {
+        return magazine.removeFirst();
     }
 
     private String getPattern() {
@@ -80,17 +77,6 @@ public class ShotgunItem extends GameItem implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("{");
-        if(countTotalRounds() > 0) {
-            builder.append(getPattern());
-        }
-        if(isSawedOf) {
-            builder.append(" ");
-            builder.append("SO");
-        }
-        builder.append("}");
-
-        return builder.toString();
+        return getPattern() + (isSawedOf ? " SO" : "");
     }
 }

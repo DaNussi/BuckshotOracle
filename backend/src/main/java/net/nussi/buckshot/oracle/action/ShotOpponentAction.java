@@ -1,51 +1,37 @@
 package net.nussi.buckshot.oracle.action;
 
 import net.nussi.buckshot.oracle.item.BulletType;
-import net.nussi.buckshot.oracle.item.ShotgunItem;
+import net.nussi.buckshot.oracle.service.GameEngine;
 import net.nussi.buckshot.oracle.state.GameState;
+import net.nussi.buckshot.oracle.state.ShotgunState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ShotOpponentAction extends GameAction{
+import java.util.List;
+
+public class ShotOpponentAction  extends GameAction {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    double successProbability = 0;
-
-    public ShotOpponentAction(GameState state) {
-        super(state);
-
-        successProbability = ((double) state.shotgun.countLiveRounds()) / ((double) state.shotgun.countTotalRounds());
-    }
-
     @Override
-    public GameState execute() {
-        BulletType bullet = state.shotgun.magazine.pop();
-        int damage = ShotgunItem.calculateDamage(bullet, state.shotgun.isSawedOf);
+    public List<GameActionResult> innerExecute(GameState state) {
+        ShotgunState shotgun = state.shotgun;
+        int damage = shotgun.damage();
+        BulletType bullet = shotgun.eject();
 
-        if(state.isPlayerTurn) {
-            state.dealer.health -= damage;
+        if (bullet == BulletType.BLANK) {
+            GameEngine.endTurn(state);
+            return List.of(new GameActionResult(state, null, 1.0, state.current.name+" shot "+state.opponent.name+" with a blank bullet."));
         } else {
-            state.player.health -= damage;
+            state.opponent.health -= damage;
+            GameEngine.endTurn(state);
+            return List.of(new GameActionResult(state, null, 1.0, state.current.name+" shot "+state.opponent.name+ ", "+damage+" damage taken."));
         }
 
-        if(state.isPlayerTurn && bullet == BulletType.BLANK) logger.info("Player shot dealer but the round was a blank.");
-        if(state.isPlayerTurn && bullet == BulletType.LIVE) logger.info("Player shot dealer for {} damage.", damage);
-        if(!state.isPlayerTurn && bullet == BulletType.BLANK) logger.info("Dealer shot player but the round was a blank.");
-        if(!state.isPlayerTurn && bullet == BulletType.LIVE) logger.info("Dealer shot player for {} damage.", damage);
-
-        state.step += 1;
-        state.isPlayerTurn = !state.isPlayerTurn;
-        state.turn += 1;
-        state.shotgun.isSawedOf = false;
-
-        return state;
     }
 
     @Override
     public String description() {
-        String probability = String.format("%.0f%%", successProbability * 100d);
-        return state.isPlayerTurn ?
-                "player shots dealer with a " + probability + " success probability." :
-                "dealer shots player with a " + probability + " success probability.";
+        return "The current player shots the opponent with the shotgun.";
     }
+
 }

@@ -1,52 +1,35 @@
 package net.nussi.buckshot.oracle.action;
 
 import net.nussi.buckshot.oracle.item.BulletType;
-import net.nussi.buckshot.oracle.item.ShotgunItem;
+import net.nussi.buckshot.oracle.service.GameEngine;
 import net.nussi.buckshot.oracle.state.GameState;
+import net.nussi.buckshot.oracle.state.ShotgunState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ShotSelfAction extends GameAction{
+import java.util.List;
+
+public class ShotSelfAction extends GameAction {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    double successProbability = 0;
-
-    public ShotSelfAction(GameState state) {
-        super(state);
-
-        successProbability = ((double) state.shotgun.countBlankRounds()) / ((double) state.shotgun.countTotalRounds());
-    }
-
     @Override
-    public GameState execute() {
-        BulletType bullet = state.shotgun.magazine.pop();
-        int damage = ShotgunItem.calculateDamage(bullet, state.shotgun.isSawedOf);
+    public List<GameActionResult> innerExecute(GameState state) {
+        ShotgunState shotgun = state.shotgun;
+        int damage = shotgun.damage();
+        BulletType bullet = shotgun.eject();
 
-        if(state.isPlayerTurn) state.player.health -= damage;
-        if(!state.isPlayerTurn) state.dealer.health -= damage;
-
-
-        if(state.isPlayerTurn && bullet == BulletType.BLANK) logger.info("Player shot himself but the round was a blank.");
-        if(state.isPlayerTurn && bullet == BulletType.LIVE) logger.info("Player shot himself for {} damage.", damage);
-        if(!state.isPlayerTurn && bullet == BulletType.BLANK) logger.info("Dealer shot himself but the round was a blank.");
-        if(!state.isPlayerTurn && bullet == BulletType.LIVE) logger.info("Dealer shot himself for {} damage.", damage);
-
-        state.step += 1;
-
-        if(bullet == BulletType.LIVE) {
-            state.isPlayerTurn = !state.isPlayerTurn;
-            state.turn += 1;
-            state.shotgun.isSawedOf = false;
+        if (bullet == BulletType.BLANK) {
+            return List.of(new GameActionResult(state, null, 1.0, state.current.name+" shot himself with a blank bullet."));
+        } else {
+            state.current.health -= damage;
+            GameEngine.endTurn(state);
+            return List.of(new GameActionResult(state, null, 1.0, state.current.name+" shot himself, "+damage+" damage taken."));
         }
-
-        return state;
     }
 
     @Override
     public String description() {
-        String probability = String.format("%.0f%%", successProbability * 100d);
-        return state.isPlayerTurn ?
-                "player shots himself with a " + probability + " success probability." :
-                "dealer shots himself with a " + probability + " success probability.";
+        return "The current player shots himself with the shotgun.";
     }
+
 }

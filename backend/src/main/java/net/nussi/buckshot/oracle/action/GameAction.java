@@ -1,39 +1,21 @@
 package net.nussi.buckshot.oracle.action;
 
 import net.nussi.buckshot.oracle.state.GameState;
-import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.util.List;
 
 public abstract class GameAction {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public GameState state;
 
-    public GameAction(GameState state) {
-        try {
-
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(state);
-            oos.flush();
-            oos.close();
-            bos.close();
-            byte[] byteData = bos.toByteArray();
-            ByteArrayInputStream bais = new ByteArrayInputStream(byteData);
-            Object object = new ObjectInputStream(bais).readObject();
-            this.state = (GameState) object;
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            e.printStackTrace();
-        }
+    public List<GameActionResult> execute(GameState state) throws Exception {
+        GameState innerState = state.clone();
+        List<GameActionResult> results = innerExecute(innerState);
+        for(var result : results) result.state.step += 1;
+        return results;
     }
-
-    public abstract GameState execute();
+    public abstract List<GameActionResult> innerExecute(GameState state) throws Exception;
     public abstract String description();
 }

@@ -2,42 +2,57 @@ package net.nussi.buckshot.oracle.state;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-import net.nussi.buckshot.oracle.item.BulletType;
-import net.nussi.buckshot.oracle.item.ShotgunItem;
+import lombok.ToString;
+import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 @AllArgsConstructor
 @Builder
+@ToString
 public class GameState implements Serializable {
+    @ToString.Exclude
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Builder.Default
-    public int step = 0;
+    public int step = 0; // Each actions is a step
     @Builder.Default
-    public int turn = 0;
-
+    public int turn = 0; // Each time the current player swaps the counter increments
+    @Builder.Default
+    public int round = 0; // Each time when someone dies the counter increments
     @Builder.Default
     public boolean ended = false;
-
-    public PlayerState dealer;
-    public PlayerState player;
-    public ShotgunItem shotgun;
-
     @Builder.Default
-    public boolean isPlayerTurn = true;
+    public long seed = 4564654645L;
 
-    @Override
-    public String toString() {
-        return "GameState{" +
-                "step=" + step +
-                ", turn=" + turn +
-                ", ended=" + ended +
-                ", dealer=" + dealer +
-                ", player=" + player +
-                ", shotgun=" + shotgun +
-                ", isPlayerTurn=" + isPlayerTurn +
-                '}';
+    public ShotgunState shotgun;
+
+    public PlayerState current;
+    public PlayerState opponent;
+
+    public GameState clone() {
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(this);
+            oos.flush();
+            oos.close();
+            bos.close();
+            byte[] byteData = bos.toByteArray();
+            ByteArrayInputStream bais = new ByteArrayInputStream(byteData);
+            Object object = new ObjectInputStream(bais).readObject();
+            return (GameState) object;
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            e.printStackTrace();
+            return this;
+        }
     }
+
+
 }
