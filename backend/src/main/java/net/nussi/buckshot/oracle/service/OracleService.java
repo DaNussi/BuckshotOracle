@@ -1,7 +1,8 @@
 package net.nussi.buckshot.oracle.service;
 
-import net.nussi.buckshot.oracle.action.GameAction;
-import net.nussi.buckshot.oracle.state.GameState;
+import net.nussi.buckshot.oracle.engine.GameAction;
+import net.nussi.buckshot.oracle.engine.GameEngine;
+import net.nussi.buckshot.oracle.engine.state.GameState;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
