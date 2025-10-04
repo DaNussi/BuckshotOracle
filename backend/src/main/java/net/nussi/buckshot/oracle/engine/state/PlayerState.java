@@ -1,56 +1,25 @@
 package net.nussi.buckshot.oracle.engine.state;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import net.nussi.buckshot.oracle.engine.type.ItemType;
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+import net.nussi.buckshot.oracle.engine.item.base.ItemType;
 
-import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-@Builder
-@AllArgsConstructor
-public class PlayerState implements Serializable {
+@Slf4j
+@ToString
+public class PlayerState {
 
-    public String name;
+    public final String name;
+    public final int health;
+    public final List<ItemType> items;
+    public final boolean isHandcuffed = false;
 
-    public int health;
-
-    @Builder.Default
-    public List<ItemType> items = new ArrayList<>();
-
-    @Builder.Default
-    public boolean isHandcuffed = false;
-
-    public PlayerState addItem(ItemType item) {
-        items.add(item);
-        return this;
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("{");
-        builder.append(name).append(" ");
-        builder.append(health).append("hp");
-        if(items.size() > 0) {
-            builder.append(" ");
-            builder.append("items:");
-            for(var item : items) {
-                builder.append(" ");
-                builder.append(item.toString());
-            }
-        }
-
-        if(isHandcuffed) {
-            builder.append(" ");
-            builder.append("handcuffed");
-        }
-
-        builder.append("}");
-
-
-        return builder.toString();
+    public PlayerState(String name, int health, List<ItemType> items) {
+        this.name = name;
+        this.health = health;
+        this.items = Collections.unmodifiableList(items);
     }
 }
 

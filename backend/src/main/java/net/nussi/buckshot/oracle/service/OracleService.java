@@ -1,6 +1,6 @@
 package net.nussi.buckshot.oracle.service;
 
-import net.nussi.buckshot.oracle.engine.GameAction;
+import net.nussi.buckshot.oracle.engine.action.base.GameAction;
 import net.nussi.buckshot.oracle.engine.GameEngine;
 import net.nussi.buckshot.oracle.engine.state.GameState;
 import org.jgrapht.graph.SimpleDirectedGraph;
@@ -15,12 +15,10 @@ public class OracleService {
 
     public GameAction getBestAction(GameState gameState) {
 
-        SimpleDirectedGraph<GameState, GameAction> graph = new SimpleDirectedGraph<>(GameAction.class);
 
-        graph.addVertex(gameState);
 
-        // TODO
-        return gameEngine.getActions(gameState).getFirst();
+
+        return null;
     }
 
 }

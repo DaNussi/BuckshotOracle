@@ -1,113 +1,83 @@
 package net.nussi.buckshot.oracle.engine;
 
-import net.nussi.buckshot.oracle.engine.action.ShotOpponentAction;
-import net.nussi.buckshot.oracle.engine.action.ShotSelfAction;
-import net.nussi.buckshot.oracle.engine.handler.*;
+import lombok.extern.slf4j.Slf4j;
+import net.nussi.buckshot.oracle.engine.action.base.GameAction;
+import net.nussi.buckshot.oracle.engine.item.base.ItemType;
+import net.nussi.buckshot.oracle.engine.state.BulletType;
 import net.nussi.buckshot.oracle.engine.state.GameState;
 import net.nussi.buckshot.oracle.engine.state.PlayerState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.nussi.buckshot.oracle.engine.state.ShotgunState;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+@Slf4j
 @Service
 public class GameEngine implements InitializingBean {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
-    private BeerItemHandler beerItemHandler;
-
-    @Autowired
-    private InverterItemHandler inverterItemHandler;
-
-    @Autowired
-    private ExpiredMedicineItemHandler expiredMedicineItemHandler;
-
-    @Autowired
-    private AdrenalineItemHandler adrenalineItemHandler;
-
-    @Autowired
-    private HandSawItemHandler handSawItemHandler;
-
-    @Autowired
-    private CigarettePackItemHandler cigarettePackItemHandler;
-
-    @Autowired
-    private HandcuffsItemHandler handcuffsItemHandler;
-
-    @Autowired
-    private MagnifyingGlassItemHandler magnifyingGlassItemHandler;
-
-    @Autowired
-    private BurnerPhoneItemHandler burnerPhoneItemHandler;
-
-    private List<ItemHandler> itemHandlers = new ArrayList<>();
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        itemHandlers.add(beerItemHandler);
-        itemHandlers.add(inverterItemHandler);
-        itemHandlers.add(expiredMedicineItemHandler);
-        itemHandlers.add(adrenalineItemHandler);
-        itemHandlers.add(handSawItemHandler);
-        itemHandlers.add(cigarettePackItemHandler);
-        itemHandlers.add(handcuffsItemHandler);
-        itemHandlers.add(magnifyingGlassItemHandler);
-        itemHandlers.add(burnerPhoneItemHandler);
+
     }
 
-    public List<GameAction> getActions(GameState state) {
-        List<GameAction> allActions = new ArrayList<>();
+    public GameState createGame(
+            int seed,
+            List<String> player_names,
+            int baseHealth,
+            int liveRounds,
+            int blankRound
+    ) {
+        Random random = new Random(seed);
 
-        for (var item : new HashSet<>(state.current.items)) {
-            Optional<ItemHandler> optionalItemHandler = itemHandlers.stream().filter(e -> e.getType() == item).findFirst();
-            if(optionalItemHandler.isEmpty()) {
-                logger.error("Missing item handler for type {}.", item);
-                continue;
-            }
-            ItemHandler itemHandler = optionalItemHandler.get();
-            List<GameAction> itemActions = itemHandler.getActions(state);
-            allActions.addAll(itemActions);
+        List<PlayerState> players = new ArrayList<>();
+        for (String playerName : player_names) {
+            players.add(new PlayerState(
+                    playerName,
+                    baseHealth,
+                    List.of()
+            ));
         }
 
-        allActions.add(new ShotSelfAction());
-        allActions.add(new ShotOpponentAction());
+        List<BulletType> magazine = new ArrayList<>();
+        for (int i = 0; i < blankRound; i++) magazine.add(BulletType.BLANK);
+        for (int i = 0; i < liveRounds; i++) magazine.add(BulletType.LIVE);
+        Collections.shuffle(magazine, random);
+        ShotgunState shotgunState = new ShotgunState(magazine, false);
 
-        return allActions;
+        return new GameState(
+                seed,
+                shotgunState,
+                players
+        );
     }
 
-    public List<GameActionResult> executeAction(GameState state, GameAction action) throws Exception {
 
-        List<GameActionResult> results = action.execute(state);
+    public List<GameAction> getActions(GameState gameState) {
+        List<GameAction> actions = new ArrayList<>();
 
-        results.forEach(result -> {
-            if(result.state.current.health <= 0) result.state.ended = true;
-            if(result.state.opponent.health <= 0) result.state.ended = true;
-
-            if(result.state.shotgun.magazine.size() <= 0) result.state.shotgun.reload(4,4);
-        });
-
-        return results;
-    }
-
-    public static void endTurn(GameState state) {
-        state.turn += 1;
-        PlayerState temp = state.opponent;
-        state.opponent = state.current;
-        state.current = temp;
-        state.shotgun.isSawedOf=false;
-
-        if(state.current.isHandcuffed) {
-            state.current.isHandcuffed = false;
-            endTurn(state);
+        // Player uses items
+        for(ItemType item : gameState.currentPlayer().items) {
+            List<GameAction> itemActions = item.getActions(gameState);
+            actions.addAll(itemActions);
         }
+
+
+
+        return actions;
     }
-
-
 }
+
+
+
+
+
+
+
+
+
+
