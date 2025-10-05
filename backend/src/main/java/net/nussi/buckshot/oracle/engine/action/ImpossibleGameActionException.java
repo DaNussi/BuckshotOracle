@@ -1,6 +1,6 @@
 package net.nussi.buckshot.oracle.engine.action;
 
-public class ImpossibleGameActionException extends Exception {
+public class ImpossibleGameActionException extends RuntimeException {
     public ImpossibleGameActionException() {
     }
 

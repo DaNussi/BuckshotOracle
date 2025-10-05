@@ -11,4 +11,9 @@ public class ItemGameAction extends GameAction {
         throw new RuntimeException("Not implemented yet");
     }
 
+    @Override
+    public String describe(GameState gameState) throws ImpossibleGameActionException {
+        throw new RuntimeException("Not implemented yet");
+    }
+
 }

@@ -9,5 +9,6 @@ import net.nussi.buckshot.oracle.engine.state.GameStateSuperposition;
 public abstract class GameAction {
 
     public abstract GameStateSuperposition apply(GameState gameState) throws ImpossibleGameActionException;
+    public abstract String describe(GameState gameState) throws ImpossibleGameActionException;
 
 }
